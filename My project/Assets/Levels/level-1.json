@@ -1,0 +1,13 @@
+{
+    "codeBlocks":
+    [
+        {
+            "code": "print(\"Hello, world!\")",
+            "block": "block-1"
+        },
+        {
+            "code": "return true",
+            "block": "block-2"
+        }
+    ]
+}

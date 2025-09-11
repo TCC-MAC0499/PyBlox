@@ -13,21 +13,19 @@ using UnityEngine.XR.ARSubsystems;
 public class ImageTracker : MonoBehaviour
 {
     public GameObject codePrefab;
+    public TextAsset levelFile;
 
     private ARTrackedImageManager trackedImageManager;
     private Camera xrOriginCamera;
 
-    // TO-DO: Move readonly dictionary to JSON file.
-    private Dictionary<string, string> blockToCodeText = new(){
-            { "block-1", "print(\"Hello, world!\")" },
-            { "block-2", "return true" },
-        };
+    private Dictionary<string, string> blockToCodeText = new();
     private Dictionary<string, GameObject> blockToCodeGameObj = new();
 
     private void Awake()
     {
         trackedImageManager = GetComponent<ARTrackedImageManager>();
         xrOriginCamera = GetComponent<XROrigin>().Camera;
+        MapBlockToCodeTextFromJson(levelFile.text);
     }
     void OnEnable()
     {
@@ -60,6 +58,29 @@ public class ImageTracker : MonoBehaviour
             code.SetActive(trackedImage.trackingState == TrackingState.Tracking);
         }
 
+    }
+
+
+    [Serializable]
+    private class Level
+    {
+        [Serializable]
+        public class CodeBlock
+        {
+            public string code;
+            public string block;
+        }
+
+        public List<CodeBlock> codeBlocks;
+
+    }
+    private void MapBlockToCodeTextFromJson(string json)
+    {
+        Level level = JsonUtility.FromJson<Level>(json);
+        foreach (var codeBlock in level.codeBlocks)
+        {
+            blockToCodeText[codeBlock.block] = codeBlock.code;
+        }
     }
 
     // Builds Python code from arrangement of blocks by mapping their position in the 3D world into the 2D screen.
