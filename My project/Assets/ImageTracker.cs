@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -14,18 +16,24 @@ public class ImageTracker : MonoBehaviour
 {
     public GameObject codePrefab;
     public TextAsset levelFile;
+    public Button simulateButton;
 
     private ARTrackedImageManager trackedImageManager;
     private Camera xrOriginCamera;
 
     private Dictionary<string, string> blockToCodeText = new();
     private Dictionary<string, GameObject> blockToCodeGameObj = new();
+    
+    private PythonExecutor pythonExecutor;
 
     private void Awake()
     {
+        simulateButton.onClick.AddListener(() => OnSimulateClicked().Forget());
+        
         trackedImageManager = GetComponent<ARTrackedImageManager>();
         xrOriginCamera = GetComponent<XROrigin>().Camera;
         MapBlockToCodeTextFromJson(levelFile.text);
+        pythonExecutor = new PythonExecutor(Resources.Load<PythonExecutorConfig>("PythonExecutorConfig"));
     }
     void OnEnable()
     {
@@ -76,7 +84,7 @@ public class ImageTracker : MonoBehaviour
     }
     private void MapBlockToCodeTextFromJson(string json)
     {
-        Level level = JsonUtility.FromJson<Level>(json);
+        var level = JsonUtility.FromJson<Level>(json);
         foreach (var codeBlock in level.codeBlocks)
         {
             blockToCodeText[codeBlock.block] = codeBlock.code;
@@ -86,7 +94,7 @@ public class ImageTracker : MonoBehaviour
     // Builds Python code from arrangement of blocks by mapping their position in the 3D world into the 2D screen.
     // Lines of code are defined by ordering code by the Y-axis.
     // Code on the same line is defined by ordering by the X-axis blocks that are vertically too close.
-    public void OnSimulateClicked()
+    public async UniTask OnSimulateClicked()
     {
         print("Simulate!");
         var pythonCodeBlocks = new List<PythonCodeBlock>();
@@ -103,6 +111,7 @@ public class ImageTracker : MonoBehaviour
             pythonCode += $"{(code.isWholeLine ? "\n" : "")}{code.GetText()}";
         }
         print(pythonCode);
+        var output = await pythonExecutor.Execute(pythonCode);
+        print(output);
     }
-
 }
