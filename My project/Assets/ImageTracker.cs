@@ -100,8 +100,11 @@ public class ImageTracker : MonoBehaviour
         var pythonCodeBlocks = new List<PythonCodeBlock>();
         foreach (var (block, code) in blockToCodeGameObj)
         {
-            var worldToScreenPos = xrOriginCamera.WorldToScreenPoint(code.transform.position);
-            pythonCodeBlocks.Add(new PythonCodeBlock(code, worldToScreenPos));
+            if (code.activeSelf)
+            {
+                var worldToScreenPos = xrOriginCamera.WorldToScreenPoint(code.transform.position);
+                pythonCodeBlocks.Add(new PythonCodeBlock(code, worldToScreenPos));
+            }
         }
         pythonCodeBlocks.Sort((codeA, codeB) => codeA.CompareTo(codeB));
 

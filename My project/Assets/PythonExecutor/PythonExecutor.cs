@@ -71,6 +71,7 @@ public class PythonExecutor
             catch (Exception ex)
             {
                 Debug.LogError("Request threw an exception: " + ex.Message);
+                OnPythonExecutionComplete.Invoke(ex.Message);
                 return ex.Message;
             }
         }
