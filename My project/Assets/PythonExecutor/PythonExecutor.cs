@@ -16,7 +16,7 @@ public class PythonExecutor
     {
         public string code;
     }
-
+    
     [Serializable]
     private class PythonCodeResponse
     {
@@ -37,9 +37,7 @@ public class PythonExecutor
     
     private async UniTask<string> SendWebRequestAsync(string code)
     {
-        var requestData = new PythonCodeRequest();
-        requestData.code = code;
-
+        var requestData = new PythonCodeRequest { code = code };
         var jsonBody = JsonUtility.ToJson(requestData);
         var bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
 
@@ -49,31 +47,41 @@ public class PythonExecutor
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
 
-            try
+            await request.SendWebRequest();
+            
+            if (request.result != UnityWebRequest.Result.Success)
             {
-                await request.SendWebRequest();
-
-                if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
-                {
-                    Debug.LogError("Request error: " + request.error);
-                    return request.error;
-                }
-                else
-                {
-                    Debug.Log("Server's response:\n" + request.downloadHandler.text);
-
-                    var response = JsonUtility.FromJson<PythonCodeResponse>(request.downloadHandler.text);
-                    OnPythonExecutionComplete.Invoke(response.output);
-                    
-                    return response.output;
-                }
+                string formattedError = $"<color=red>Network error</color>:\n{request.error}";
+                OnPythonExecutionComplete.Invoke(formattedError);
+                return formattedError;
             }
-            catch (Exception ex)
+            
+            var response = JsonUtility.FromJson<PythonCodeResponse>(request.downloadHandler.text);
+
+            if (response.success)
             {
-                Debug.LogError("Request threw an exception: " + ex.Message);
-                OnPythonExecutionComplete.Invoke(ex.Message);
-                return ex.Message;
+                string formattedOutput = string.IsNullOrEmpty(response.output) ? "Python execution complete." : response.output;
+                OnPythonExecutionComplete.Invoke(formattedOutput);
+                return formattedOutput;
+            }
+            else
+            {
+                string formattedError = FormatPythonError(response.error);
+                OnPythonExecutionComplete.Invoke(formattedError);
+                return formattedError;
             }
         }
+    }
+
+    private string FormatPythonError(string error)
+    {
+        if (string.IsNullOrEmpty(error) || !error.Contains("Traceback (most recent call last):"))
+        {
+            return $"<color=red>Unknown Python error</color>:\n{error}";
+        }
+
+        string[] lines = error.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        string errorReason = lines[lines.Length - 1].Trim();
+        return $"<color=red>Execution failed</color>:\n{errorReason}";
     }
 }
