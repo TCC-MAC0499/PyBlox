@@ -15,13 +15,12 @@ using UnityEngine.XR.ARSubsystems;
 public class ImageTracker : MonoBehaviour
 {
     public GameObject codePrefab;
-    public TextAsset levelFile;
+    public LevelConfig levelConfig;
     public Button simulateButton;
 
     private ARTrackedImageManager trackedImageManager;
     private Camera xrOriginCamera;
 
-    private Dictionary<string, string> blockToCodeText = new();
     private Dictionary<string, GameObject> blockToCodeGameObj = new();
     
     private PythonExecutor pythonExecutor;
@@ -32,7 +31,6 @@ public class ImageTracker : MonoBehaviour
         
         trackedImageManager = GetComponent<ARTrackedImageManager>();
         xrOriginCamera = GetComponent<XROrigin>().Camera;
-        MapBlockToCodeTextFromJson(levelFile.text);
         pythonExecutor = new PythonExecutor(Resources.Load<PythonExecutorConfig>("PythonExecutorConfig"));
     }
     void OnEnable()
@@ -53,9 +51,14 @@ public class ImageTracker : MonoBehaviour
             var trackedBlock = trackedImage.referenceImage.name;
             var code = Instantiate(codePrefab, trackedImage.transform);
             var codeText = code.GetComponent<TextMeshPro>();
-
+            
+            var codeBlockData = levelConfig.codeBlocks.Find(cb => cb.block == trackedBlock);
+            if (codeBlockData != null)
+            {
+                codeText.text = codeBlockData.code;
+            }
+            
             blockToCodeGameObj[trackedBlock] = code;
-            codeText.text = blockToCodeText[trackedBlock];
         }
 
         // Update code game object tracking position
@@ -66,29 +69,6 @@ public class ImageTracker : MonoBehaviour
             code.SetActive(trackedImage.trackingState == TrackingState.Tracking);
         }
 
-    }
-
-
-    [Serializable]
-    private class Level
-    {
-        [Serializable]
-        public class CodeBlock
-        {
-            public string code;
-            public string block;
-        }
-
-        public List<CodeBlock> codeBlocks;
-
-    }
-    private void MapBlockToCodeTextFromJson(string json)
-    {
-        var level = JsonUtility.FromJson<Level>(json);
-        foreach (var codeBlock in level.codeBlocks)
-        {
-            blockToCodeText[codeBlock.block] = codeBlock.code;
-        }
     }
 
     // Builds Python code from arrangement of blocks by mapping their position in the 3D world into the 2D screen.

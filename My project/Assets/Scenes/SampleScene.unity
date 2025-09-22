@@ -1294,7 +1294,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   codePrefab: {fileID: 2863192602678036801, guid: 7592f7aa523399d46906fbfb0577011a, type: 3}
-  levelFile: {fileID: 4900000, guid: 828a0ba9be04a294787279d3bef646e7, type: 3}
+  levelConfig: {fileID: 11400000, guid: 1135f0ea739f24242914a07e36158913, type: 2}
   simulateButton: {fileID: 283571452}
 --- !u!1 &1869225393
 GameObject:
