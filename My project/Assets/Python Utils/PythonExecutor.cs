@@ -8,7 +8,7 @@ using UnityEngine.Networking;
 public class PythonExecutor
 {
     public static readonly UnityEvent<string> OnPythonExecutionComplete = new();
-    
+
     private readonly PythonExecutorConfig _config;
 
     [Serializable]
@@ -16,7 +16,7 @@ public class PythonExecutor
     {
         public string code;
     }
-    
+
     [Serializable]
     private class PythonCodeResponse
     {
@@ -24,7 +24,7 @@ public class PythonExecutor
         public string output;
         public string error;
     }
-    
+
     public PythonExecutor(PythonExecutorConfig config)
     {
         this._config = config;
@@ -34,7 +34,7 @@ public class PythonExecutor
     {
         return await SendWebRequestAsync(code);
     }
-    
+
     private async UniTask<string> SendWebRequestAsync(string code)
     {
         var requestData = new PythonCodeRequest { code = code };
@@ -48,14 +48,14 @@ public class PythonExecutor
             request.SetRequestHeader("Content-Type", "application/json");
 
             await request.SendWebRequest();
-            
+
             if (request.result != UnityWebRequest.Result.Success)
             {
                 string formattedError = $"<color=red>Network error</color>:\n{request.error}";
                 OnPythonExecutionComplete.Invoke(formattedError);
                 return formattedError;
             }
-            
+
             var response = JsonUtility.FromJson<PythonCodeResponse>(request.downloadHandler.text);
 
             if (response.success)
