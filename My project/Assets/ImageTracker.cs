@@ -49,16 +49,13 @@ public class ImageTracker : MonoBehaviour
         foreach (var trackedImage in eventArgs.added)
         {
             var trackedBlock = trackedImage.referenceImage.name;
-            var code = Instantiate(codePrefab, trackedImage.transform);
-            var codeText = code.GetComponent<TextMeshPro>();
-            
-            var codeBlockData = levelConfig.codeBlocks.Find(cb => cb.block == trackedBlock);
+            var codeBlockData = levelConfig.codeBlocks.Find(codeBlock => codeBlock.block == trackedBlock);
             if (codeBlockData != null)
             {
-                codeText.text = codeBlockData.code;
+                var code = Instantiate(codePrefab, trackedImage.transform);
+                code.GetComponent<TextMeshPro>().text = codeBlockData.code;
+                blockToCodeGameObj[trackedBlock] = code;
             }
-            
-            blockToCodeGameObj[trackedBlock] = code;
         }
 
         // Update code game object tracking position
