@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: LevelConfig-2
   m_EditorClassIdentifier: 
   codeBlocks:
-  - code: print("Hello, world!")
+  - code: a, b, c = 1, -2, 1
     block: block-1
-  - code: print("This is PyBlox!")
+  - code: print('\n'.join([f"{a*x**2 + b*x + c}" for x in range(-9, 10)]))
     block: block-2
   - code: print("Your favorite")
     block: block-3

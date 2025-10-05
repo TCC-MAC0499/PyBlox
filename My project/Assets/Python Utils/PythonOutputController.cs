@@ -7,7 +7,8 @@ public class PythonOutputController : MonoBehaviour
 {
     private void Awake()
     {
-        PythonExecutor.OnPythonExecutionComplete.AddListener(HandlePythonExecutionComplete);
+        // Disable basic output controller temporarily
+        // PythonExecutor.OnPythonExecutionComplete.AddListener(HandlePythonExecutionComplete);
     }
 
     private void HandlePythonExecutionComplete(string output)
