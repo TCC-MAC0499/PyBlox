@@ -100,5 +100,5 @@ InitTestScene*.unity*
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
 # Private resources
-Assets/Resources/PythonExecutorConfig.asset
-Assets/Resources/PythonExecutorConfig.asset.meta
+Assets/Resources/GoogleCloudConfig.asset
+Assets/Resources/GoogleCloudConfig.asset.meta

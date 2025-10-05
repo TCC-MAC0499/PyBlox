@@ -9,7 +9,7 @@ public class PythonExecutor
 {
     public static readonly UnityEvent<string> OnPythonExecutionComplete = new();
 
-    private readonly PythonExecutorConfig _config;
+    private readonly GoogleCloudConfig _config;
 
     [Serializable]
     private class PythonCodeRequest
@@ -25,7 +25,7 @@ public class PythonExecutor
         public string error;
     }
 
-    public PythonExecutor(PythonExecutorConfig config)
+    public PythonExecutor(GoogleCloudConfig config)
     {
         this._config = config;
     }
@@ -41,7 +41,7 @@ public class PythonExecutor
         var jsonBody = JsonUtility.ToJson(requestData);
         var bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
 
-        using (var request = new UnityWebRequest(_config.GoogleFunctionUrl, "POST"))
+        using (var request = new UnityWebRequest(_config.PythonExecutorUrl, "POST"))
         {
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();

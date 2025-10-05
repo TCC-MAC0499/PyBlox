@@ -31,7 +31,7 @@ public class ImageTracker : MonoBehaviour
         
         trackedImageManager = GetComponent<ARTrackedImageManager>();
         xrOriginCamera = GetComponent<XROrigin>().Camera;
-        pythonExecutor = new PythonExecutor(Resources.Load<PythonExecutorConfig>("PythonExecutorConfig"));
+        pythonExecutor = new PythonExecutor(Resources.Load<GoogleCloudConfig>("GoogleCloudConfig"));
     }
     void OnEnable()
     {
