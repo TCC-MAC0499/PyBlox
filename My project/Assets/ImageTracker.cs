@@ -22,16 +22,19 @@ public class ImageTracker : MonoBehaviour
     private Camera xrOriginCamera;
 
     private Dictionary<string, GameObject> blockToCodeGameObj = new();
-    
     private PythonExecutor pythonExecutor;
+    private BorderDetector borderDetector;
 
     private void Awake()
     {
         simulateButton.onClick.AddListener(() => OnSimulateClicked().Forget());
-        
+
         trackedImageManager = GetComponent<ARTrackedImageManager>();
         xrOriginCamera = GetComponent<XROrigin>().Camera;
-        pythonExecutor = new PythonExecutor(Resources.Load<GoogleCloudConfig>("GoogleCloudConfig"));
+
+        var googleCloudConfig = Resources.Load<GoogleCloudConfig>("GoogleCloudConfig");
+        pythonExecutor = new PythonExecutor(googleCloudConfig);
+        borderDetector = new BorderDetector(googleCloudConfig);
     }
     void OnEnable()
     {
