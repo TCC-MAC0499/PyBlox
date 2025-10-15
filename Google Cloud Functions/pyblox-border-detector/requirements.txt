@@ -1,2 +1,4 @@
 functions-framework==3.*
-google-cloud-storage==2.17.0
+google-cloud-storage==2.*
+opencv-python-headless==4.*
+numpy==2.*
