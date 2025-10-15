@@ -21,7 +21,7 @@ public class ImageTracker : MonoBehaviour
     private ARTrackedImageManager trackedImageManager;
     private Camera xrOriginCamera;
 
-    private Dictionary<string, GameObject> blockToCodeGameObj = new();
+    private Dictionary<string, PythonCodeBlock> blockToCode = new();
     private PythonExecutor pythonExecutor;
     private BorderDetector borderDetector;
 
@@ -55,9 +55,8 @@ public class ImageTracker : MonoBehaviour
             var codeBlockData = levelConfig.codeBlocks.Find(codeBlock => codeBlock.block == trackedBlock);
             if (codeBlockData != null)
             {
-                var code = Instantiate(codePrefab, trackedImage.transform);
-                code.GetComponent<TextMeshPro>().text = codeBlockData.code;
-                blockToCodeGameObj[trackedBlock] = code;
+                var code = new PythonCodeBlock(codePrefab, codeBlockData.code, trackedImage.transform);
+                blockToCode[trackedBlock] = code;
             }
         }
 
@@ -65,7 +64,7 @@ public class ImageTracker : MonoBehaviour
         foreach (var trackedImage in eventArgs.updated)
         {
             var trackedBlock = trackedImage.referenceImage.name;
-            var code = blockToCodeGameObj[trackedBlock];
+            var code = blockToCode[trackedBlock];
             code.SetActive(trackedImage.trackingState == TrackingState.Tracking);
         }
 
@@ -76,25 +75,31 @@ public class ImageTracker : MonoBehaviour
     // Code on the same line is defined by ordering by the X-axis blocks that are vertically too close.
     public async UniTask OnSimulateClicked()
     {
-        print("Simulate!");
-        var pythonCodeBlocks = new List<PythonCodeBlock>();
-        foreach (var (block, code) in blockToCodeGameObj)
+        Debug.Log("Simulate clicked!");
+
+        var borderDetectionOutput = await borderDetector.Detect();
+
+        var simulationCodeBlocks = new List<PythonCodeBlock>();
+        foreach (var (block, code) in blockToCode)
         {
-            if (code.activeSelf)
+            if (code.GetActive())
             {
-                var worldToScreenPos = xrOriginCamera.WorldToScreenPoint(code.transform.position);
-                pythonCodeBlocks.Add(new PythonCodeBlock(code, worldToScreenPos));
+                code.SetPositionFromCamera(xrOriginCamera);
+                // TODO: Set line break tolerance for Python Code Block with Border Detector output.
+                simulationCodeBlocks.Add(code);
             }
         }
-        pythonCodeBlocks.Sort((codeA, codeB) => codeA.CompareTo(codeB));
 
-        var pythonCode = "";
-        foreach (var code in pythonCodeBlocks)
+        simulationCodeBlocks.Sort();
+
+        var simulationCode = "";
+        foreach (var code in simulationCodeBlocks)
         {
-            pythonCode += $"{(code.isWholeLine ? "\n" : "")}{code.GetText()}";
+            simulationCode += $"{(code.isWholeLineOfCode ? "\n" : "")}{code.GetText()}";
         }
-        print(pythonCode);
-        var output = await pythonExecutor.Execute(pythonCode);
-        print(output);
+        Debug.Log(simulationCode);
+    
+        var pythonExecutionOutput = await pythonExecutor.Execute(simulationCode);
+        Debug.Log(pythonExecutionOutput);
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -11,9 +12,22 @@ public class BorderDetector
     [Serializable]
     private class BorderDetectorResponse
     {
+        [Serializable]
+        public class BlockBorder
+        {
+            [Serializable]
+            public class Coordinates
+            {
+                public int x;
+                public int y;
+            }
+
+            public List<Coordinates> border;
+        }
+
         public bool success;
-        public string image_url;
         public string error;
+        public List<BlockBorder> block_borders;
     }
 
     public BorderDetector(GoogleCloudConfig config)
@@ -49,9 +63,19 @@ public class BorderDetector
             }
 
             var response = JsonUtility.FromJson<BorderDetectorResponse>(request.downloadHandler.text);
+            Debug.Log(request.downloadHandler.text);
             if (response.success)
             {
-                return response.image_url;
+                // TODO: Interpret Border Detector output.
+                // foreach (var block_border in response.block_borders)
+                // {
+                //     Debug.Log("border");
+                //     foreach (var coordinates in block_border.border)
+                //     {
+                //         Debug.Log( $"{coordinates.x},{coordinates.y}");
+                //     }
+                // }
+                return response.error;
             }
             else
             {
@@ -80,7 +104,7 @@ public class BorderDetector
             frameTexture.LoadRawTextureData(gpuRequest.GetData<uint>());
             frameTexture.Apply();
 
-            // Consequently, frame is captured upside-down
+            // Consequently, frame is captured upside-down, which will be fixed in the Google Cloud function
             return frameTexture.EncodeToJPG();
         }
     }

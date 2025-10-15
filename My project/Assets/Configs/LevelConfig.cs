@@ -6,12 +6,12 @@ using UnityEngine;
 public class LevelConfig : ScriptableObject
 {
     [Serializable]
-    public class CodeBlock
+    public class CodeBlockConfig
     {
         public string code;
         public string block;
     }
     
     [SerializeField]
-    public List<CodeBlock> codeBlocks;
+    public List<CodeBlockConfig> codeBlocks;
 }
