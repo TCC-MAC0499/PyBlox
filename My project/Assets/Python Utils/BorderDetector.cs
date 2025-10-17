@@ -35,17 +35,13 @@ public class BorderDetector
         this._config = config;
     }
 
-    public async UniTask<List<BlockBorder>> Detect(Camera camera)
+    public async UniTask<List<BlockBorder>> Detect(byte[] cameraFrameBytes)
     {
-        var frameBytes = await GetCameraFrame(camera);
-        if (frameBytes.Length > 0)
+        if (cameraFrameBytes.Length == 0)
         {
-            return await SendWebRequestAsync(frameBytes);
+            throw new Exception("Cannot detect borders without a camera frame image.");
         }
-        else
-        {
-            throw new Exception("Error capturing camera frame.");
-        }
+        return await SendWebRequestAsync(cameraFrameBytes);
     }
 
     private async UniTask<List<BlockBorder>> SendWebRequestAsync(byte[] imageBytes)
@@ -62,20 +58,17 @@ public class BorderDetector
                 throw new Exception(request.error);
             }
 
-            var response = JsonUtility.FromJson<BorderDetectorResponse>(request.downloadHandler.text);
             Debug.Log(request.downloadHandler.text);
+            var response = JsonUtility.FromJson<BorderDetectorResponse>(request.downloadHandler.text);
             if (response.success)
             {
                 return response.block_borders;
             }
-            else
-            {
-                throw new Exception(response.error);
-            }
+            throw new Exception(response.error);
         }
     }
 
-    private async UniTask<byte[]> GetCameraFrame(Camera camera)
+    public async UniTask<byte[]> GetCameraFrame(Camera camera)
     {
         var frameRender = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
         var originalCameraTarget = camera.targetTexture;

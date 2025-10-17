@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Cysharp.Threading.Tasks;
-using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -70,35 +71,89 @@ public class ImageTracker : MonoBehaviour
 
     }
 
+    private double GetBlockSideLengthAvg(List<BorderDetector.BlockBorder> blocks)
+    {
+        Debug.Log($"Detected {blocks.Count} blocks in current frame.");
+        if (blocks.Count > 5)
+        {
+            Debug.Log("More blocks than available in PyBlox have been mistakenly detected, so the average length of block sides will probably be miscalculated.");
+        } else if (blocks.Count < 5)
+        {
+            Debug.Log($"Less blocks than available in PyBlox have been detected. If only {blocks.Count} blocks are in frame, this is expected. If not, the average length of block sides will probably be miscalculated.");
+        }
+
+        var sideLengthAvg = 0.0;
+        foreach (var block in blocks)
+        {
+            var sideLengthSum = 0.0;
+            for (var idx = 0; idx < block.border.Count; idx++)
+            {
+                var nextIdx = (idx + 1) % block.border.Count;
+
+                var cornerCoords = block.border[idx];
+                var nextCornerCoords = block.border[nextIdx];
+
+                var corner = new Vector2(cornerCoords.x, cornerCoords.y);
+                var nextCorner = new Vector2(nextCornerCoords.x, nextCornerCoords.y);
+
+                var sideLength = Math.Abs(Vector2.Distance(corner, nextCorner));
+                sideLengthSum += sideLength;
+            }
+            sideLengthAvg += sideLengthSum / 4.0;
+        }
+        sideLengthAvg /= blocks.Count;
+    
+        return sideLengthAvg;
+    }
+
     // Builds Python code from arrangement of blocks by mapping their position in the 3D world into the 2D screen.
     // Lines of code are defined by ordering code by the Y-axis.
     // Code on the same line is defined by ordering by the X-axis blocks that are vertically too close.
     public async UniTask OnSimulateClicked()
     {
         Debug.Log("Simulate clicked!");
-
-        var borderDetectionOutput = await borderDetector.Detect();
-
+    
+        // First, capture camera frame and calculate block position from camera
+        // in order to ensure maximum accuracy of position values.
+        var cameraFrame = await borderDetector.GetCameraFrame(xrOriginCamera);
         var simulationCodeBlocks = new List<PythonCodeBlock>();
         foreach (var (block, code) in blockToCode)
         {
             if (code.GetActive())
             {
                 code.SetPositionFromCamera(xrOriginCamera);
-                // TODO: Set line break tolerance for Python Code Block with Border Detector output.
                 simulationCodeBlocks.Add(code);
             }
         }
 
+
+        // Second, detect block borders in camera frame and calculate line break tolerance
+        // from border sides in order to sort blocks from their arrengement.
+        var blockBorders = await borderDetector.Detect(cameraFrame);
+        var defaultLineBreakTolerance = GetBlockSideLengthAvg(blockBorders) / 2.0;
+        foreach (var code in simulationCodeBlocks)
+        {
+            var blockBorder = code.GetFittingBorder(blockBorders);
+            if (blockBorder.Count == 0)
+            {
+                Debug.Log($"Unable to find fitting border for code block \"{code.GetText()}\"");
+                code.SetLineBreakTolerance(defaultLineBreakTolerance);
+            }
+            else
+            {
+                code.SetLineBreakToleranceFromBorder(blockBorder);
+            }
+        }
         simulationCodeBlocks.Sort();
 
+        // Finally, build Python code from sorted block order.
         var simulationCode = "";
         foreach (var code in simulationCodeBlocks)
         {
             simulationCode += $"{(code.isWholeLineOfCode ? "\n" : "")}{code.GetText()}";
         }
         Debug.Log(simulationCode);
-    
+
         var pythonExecutionOutput = await pythonExecutor.Execute(simulationCode);
         Debug.Log(pythonExecutionOutput);
     }
