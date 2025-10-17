@@ -1,7 +1,6 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.XR.ARFoundation;
 
 [Serializable]
 public class PythonCodeBlock : IComparable<PythonCodeBlock>
@@ -10,7 +9,7 @@ public class PythonCodeBlock : IComparable<PythonCodeBlock>
     private Vector2 blockScreenPos = Vector2.zero;
 
     public bool isWholeLineOfCode = true;
-    public double codeLineBreakTolerance = 0.2;
+    public double codeLineBreakTolerance = 1.0;
 
     public PythonCodeBlock(GameObject codePrefab, string codeText, Transform codePosition)
     {
@@ -54,5 +53,10 @@ public class PythonCodeBlock : IComparable<PythonCodeBlock>
     public void SetPositionFromCamera(Camera camera)
     {
         camera.WorldToScreenPoint(codeGameObject.transform.position);
+    }
+
+    public void SetLineBreakTolerance(double newLineBreakTolerance)
+    {
+        codeLineBreakTolerance = newLineBreakTolerance;
     }
 }

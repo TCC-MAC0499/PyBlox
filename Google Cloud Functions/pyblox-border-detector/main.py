@@ -21,12 +21,10 @@ def detect_block_borders(request):
                 }), 4000, {"Content-Type": "application/json"})
 
         frame_np = np.frombuffer(frame_bytes, dtype=np.uint8)
-        frame_cv = cv2.imdecode(frame_np, cv2.IMREAD_COLOR)
-        if frame_cv is None:
+        img = cv2.imdecode(frame_np, cv2.IMREAD_COLOR)
+        if img is None:
             return ("Cannot decode frame image", 400)
 
-        # Flip image because Unity captures frames upside-down
-        img = cv2.flip(frame_cv, 0)
         # Convert colorful image into grayscale
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # Apply Gaussian blur to image to minimize noise

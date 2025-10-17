@@ -10,21 +10,21 @@ public class BorderDetector
     private readonly GoogleCloudConfig _config;
 
     [Serializable]
-    private class BorderDetectorResponse
+    public class BlockBorder
     {
         [Serializable]
-        public class BlockBorder
+        public class Coordinates
         {
-            [Serializable]
-            public class Coordinates
-            {
-                public int x;
-                public int y;
-            }
-
-            public List<Coordinates> border;
+            public int x;
+            public int y;
         }
 
+        public List<Coordinates> border;
+    }
+
+    [Serializable]
+    private class BorderDetectorResponse
+    {
         public bool success;
         public string error;
         public List<BlockBorder> block_borders;
@@ -35,20 +35,20 @@ public class BorderDetector
         this._config = config;
     }
 
-    public async UniTask<string> Detect()
+    public async UniTask<List<BlockBorder>> Detect(Camera camera)
     {
-        var frameBytes = await GetCameraFrame();
+        var frameBytes = await GetCameraFrame(camera);
         if (frameBytes.Length > 0)
         {
             return await SendWebRequestAsync(frameBytes);
         }
         else
         {
-            return "Error capturing camera frame.";
+            throw new Exception("Error capturing camera frame.");
         }
     }
 
-    private async UniTask<string> SendWebRequestAsync(byte[] imageBytes)
+    private async UniTask<List<BlockBorder>> SendWebRequestAsync(byte[] imageBytes)
     {
         using (var request = new UnityWebRequest(_config.BorderDetectorUrl, "POST"))
         {
@@ -59,38 +59,31 @@ public class BorderDetector
             await request.SendWebRequest();
             if (request.result != UnityWebRequest.Result.Success)
             {
-                return request.error;
+                throw new Exception(request.error);
             }
 
             var response = JsonUtility.FromJson<BorderDetectorResponse>(request.downloadHandler.text);
             Debug.Log(request.downloadHandler.text);
             if (response.success)
             {
-                // TODO: Interpret Border Detector output.
-                // foreach (var block_border in response.block_borders)
-                // {
-                //     Debug.Log("border");
-                //     foreach (var coordinates in block_border.border)
-                //     {
-                //         Debug.Log( $"{coordinates.x},{coordinates.y}");
-                //     }
-                // }
-                return response.error;
+                return response.block_borders;
             }
             else
             {
-                return response.error;
+                throw new Exception(response.error);
             }
         }
     }
 
-    private async UniTask<byte[]> GetCameraFrame()
+    private async UniTask<byte[]> GetCameraFrame(Camera camera)
     {
-        var frameRender = RenderTexture.GetTemporary(Screen.width, Screen.height, 0, RenderTextureFormat.ARGB32);
-        ScreenCapture.CaptureScreenshotIntoRenderTexture(frameRender);
+        var frameRender = RenderTexture.GetTemporary(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
+        var originalCameraTarget = camera.targetTexture;
+        camera.targetTexture = frameRender;
+        camera.Render();
 
-        // GPU buffers assumebottom-left image origin
         var gpuRequest = await AsyncGPUReadback.Request(frameRender, 0, TextureFormat.ARGB32);
+        camera.targetTexture = originalCameraTarget;
         RenderTexture.ReleaseTemporary(frameRender);
 
         if (gpuRequest.hasError)
@@ -99,12 +92,10 @@ public class BorderDetector
         }
         else
         {
-            // Texture2D and JPG encoder assume top-left image origin
             var frameTexture = new Texture2D(Screen.width, Screen.height, TextureFormat.ARGB32, false);
             frameTexture.LoadRawTextureData(gpuRequest.GetData<uint>());
             frameTexture.Apply();
 
-            // Consequently, frame is captured upside-down, which will be fixed in the Google Cloud function
             return frameTexture.EncodeToJPG();
         }
     }
