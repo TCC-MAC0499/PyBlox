@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Cysharp.Threading.Tasks;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -49,7 +47,7 @@ public class ImageTracker : MonoBehaviour
 
     private void OnTrackablesChanged(ARTrackablesChangedEventArgs<ARTrackedImage> eventArgs)
     {
-        // Create code from prefab and tracked block
+        // Create code from recently detected block.
         foreach (var trackedImage in eventArgs.added)
         {
             var trackedBlock = trackedImage.referenceImage.name;
@@ -61,7 +59,7 @@ public class ImageTracker : MonoBehaviour
             }
         }
 
-        // Update code game object tracking position
+        // Update code with recent changes to detected block's visibility.
         foreach (var trackedImage in eventArgs.updated)
         {
             var trackedBlock = trackedImage.referenceImage.name;
@@ -69,41 +67,6 @@ public class ImageTracker : MonoBehaviour
             code.SetActive(trackedImage.trackingState == TrackingState.Tracking);
         }
 
-    }
-
-    private double GetBlockSideLengthAvg(List<BorderDetector.BlockBorder> blocks)
-    {
-        Debug.Log($"Detected {blocks.Count} blocks in current frame.");
-        if (blocks.Count > 5)
-        {
-            Debug.Log("More blocks than available in PyBlox have been mistakenly detected, so the average length of block sides will probably be miscalculated.");
-        } else if (blocks.Count < 5)
-        {
-            Debug.Log($"Less blocks than available in PyBlox have been detected. If only {blocks.Count} blocks are in frame, this is expected. If not, the average length of block sides will probably be miscalculated.");
-        }
-
-        var sideLengthAvg = 0.0;
-        foreach (var block in blocks)
-        {
-            var sideLengthSum = 0.0;
-            for (var idx = 0; idx < block.border.Count; idx++)
-            {
-                var nextIdx = (idx + 1) % block.border.Count;
-
-                var cornerCoords = block.border[idx];
-                var nextCornerCoords = block.border[nextIdx];
-
-                var corner = new Vector2(cornerCoords.x, cornerCoords.y);
-                var nextCorner = new Vector2(nextCornerCoords.x, nextCornerCoords.y);
-
-                var sideLength = Math.Abs(Vector2.Distance(corner, nextCorner));
-                sideLengthSum += sideLength;
-            }
-            sideLengthAvg += sideLengthSum / 4.0;
-        }
-        sideLengthAvg /= blocks.Count;
-    
-        return sideLengthAvg;
     }
 
     // Builds Python code from arrangement of blocks by mapping their position in the 3D world into the 2D screen.
@@ -128,25 +91,34 @@ public class ImageTracker : MonoBehaviour
 
 
         // Second, detect block borders in camera frame and calculate line break tolerance
-        // from border sides in order to sort blocks from their arrengement.
-        var blockBorders = await borderDetector.Detect(cameraFrame);
-        var defaultLineBreakTolerance = GetBlockSideLengthAvg(blockBorders) / 2.0;
+        // from border sides in order to sort blocks based on their arrengement.
+        var codeToBorder = await borderDetector.Detect(cameraFrame, simulationCodeBlocks);
+        double maxLineBreakTol = 0.0;
         foreach (var code in simulationCodeBlocks)
         {
-            var blockBorder = code.GetFittingBorder(blockBorders);
-            if (blockBorder.Count == 0)
+            if (codeToBorder.TryGetValue(code, out List<Vector2> border))
             {
-                Debug.Log($"Unable to find fitting border for code block \"{code.GetText()}\"");
-                code.SetLineBreakTolerance(defaultLineBreakTolerance);
+                var currentLineBreakTol = code.SetLineBreakToleranceFromBorder(border);
+                maxLineBreakTol = currentLineBreakTol > maxLineBreakTol ? currentLineBreakTol : maxLineBreakTol;
             }
-            else
+        }
+
+        if (maxLineBreakTol == 0.0)
+        {
+            // TODO: Warn player of border detection failure and provide instructions for better detection.
+            throw new Exception("Cannot build Python code from arrangement of blocks because no block borders were detected.");
+        }
+        foreach (var code in simulationCodeBlocks)
+        {
+            if (!codeToBorder.TryGetValue(code, out List<Vector2> border))
             {
-                code.SetLineBreakToleranceFromBorder(blockBorder);
+                Debug.Log($"Unable to find fitting border for code block \"{code.GetText()}\". Using other code block's fitting borders to define this code block's line break tolerance.");
+                code.SetLineBreakTolerance(maxLineBreakTol);
             }
         }
         simulationCodeBlocks.Sort();
 
-        // Finally, build Python code from sorted block order.
+        // Finally, build Python code based on the sorted blocks.
         var simulationCode = "";
         foreach (var code in simulationCodeBlocks)
         {
