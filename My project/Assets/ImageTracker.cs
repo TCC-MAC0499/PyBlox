@@ -89,7 +89,6 @@ public class ImageTracker : MonoBehaviour
             }
         }
 
-
         // Second, detect block borders in camera frame and calculate line break tolerance
         // from border sides in order to sort blocks based on their arrengement.
         var codeToBorder = await borderDetector.Detect(cameraFrame, simulationCodeBlocks);
@@ -102,7 +101,6 @@ public class ImageTracker : MonoBehaviour
                 maxLineBreakTol = currentLineBreakTol > maxLineBreakTol ? currentLineBreakTol : maxLineBreakTol;
             }
         }
-
         if (maxLineBreakTol == 0.0)
         {
             // TODO: Warn player of border detection failure and provide instructions for better detection.

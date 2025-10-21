@@ -20,7 +20,7 @@ public class SimulationController : MonoBehaviour
     {
         simulationCanvas.SetActive(false);
         _backgroundRect = backgroundImage.GetComponent<RectTransform>();
-        PythonExecutor.OnPythonExecutionComplete.AddListener(HandlePythonExecutionComplete);
+        PythonExecutor.OnPythonExecutionCompleted.AddListener(HandlePythonExecutionComplete);
     }
 
     private void HandlePythonExecutionComplete(string output)
