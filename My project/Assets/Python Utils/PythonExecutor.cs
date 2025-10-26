@@ -8,7 +8,8 @@ using UnityEngine.Networking;
 public class PythonExecutor
 {
     public static readonly UnityEvent<string> OnPythonExecutionInitiated = new();
-    public static readonly UnityEvent<string> OnPythonExecutionCompleted = new();
+    public static readonly UnityEvent<string> OnPythonExecutionCompletedSuccessfully = new();
+    public static readonly UnityEvent<string> OnPythonExecutionCompletedWithFailure = new();
 
     private readonly GoogleCloudConfig _config;
 
@@ -54,7 +55,7 @@ public class PythonExecutor
             if (request.result != UnityWebRequest.Result.Success)
             {
                 string formattedError = $"<color=red>Network error</color>:\n{request.error}";
-                OnPythonExecutionCompleted.Invoke(formattedError);
+                OnPythonExecutionCompletedWithFailure.Invoke(formattedError);
                 return formattedError;
             }
 
@@ -63,13 +64,13 @@ public class PythonExecutor
             if (response.success)
             {
                 string formattedOutput = string.IsNullOrEmpty(response.output) ? "Python execution complete." : response.output;
-                OnPythonExecutionCompleted.Invoke(formattedOutput);
+                OnPythonExecutionCompletedSuccessfully.Invoke(formattedOutput);
                 return formattedOutput;
             }
             else
             {
                 string formattedError = FormatPythonError(response.error);
-                OnPythonExecutionCompleted.Invoke(formattedError);
+                OnPythonExecutionCompletedWithFailure.Invoke(formattedError);
                 return formattedError;
             }
         }

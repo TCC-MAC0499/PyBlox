@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class SimulationController : MonoBehaviour
+public class PythonSimulationController : MonoBehaviour
 {
     [SerializeField] private GameObject simulationCanvas;
     [SerializeField] private GameObject pointPrefab;
@@ -20,7 +20,7 @@ public class SimulationController : MonoBehaviour
     {
         simulationCanvas.SetActive(false);
         _backgroundRect = backgroundImage.GetComponent<RectTransform>();
-        PythonExecutor.OnPythonExecutionCompleted.AddListener(HandlePythonExecutionComplete);
+        PythonExecutor.OnPythonExecutionCompletedSuccessfully.AddListener(HandlePythonExecutionComplete);
     }
 
     private void HandlePythonExecutionComplete(string output)
