@@ -21,6 +21,7 @@ public class PythonSimulationController : MonoBehaviour
         simulationCanvas.SetActive(false);
         _backgroundRect = backgroundImage.GetComponent<RectTransform>();
         PythonExecutor.OnPythonExecutionCompletedSuccessfully.AddListener(HandlePythonExecutionComplete);
+        PythonExecutor.OnClearPythonExecution.AddListener(HandleClearPythonSimulation);
     }
 
     private void HandlePythonExecutionComplete(string output)
@@ -101,5 +102,10 @@ public class PythonSimulationController : MonoBehaviour
             
             yield return new WaitForSeconds(delayPerPoint);
         }
+    }
+
+    private void HandleClearPythonSimulation()
+    {
+        simulationCanvas.SetActive(false);
     }
 }

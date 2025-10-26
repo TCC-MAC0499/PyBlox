@@ -10,6 +10,7 @@ public class PythonExecutor
     public static readonly UnityEvent<string> OnPythonExecutionInitiated = new();
     public static readonly UnityEvent<string> OnPythonExecutionCompletedSuccessfully = new();
     public static readonly UnityEvent<string> OnPythonExecutionCompletedWithFailure = new();
+    public static readonly UnityEvent OnClearPythonExecution = new();
 
     private readonly GoogleCloudConfig _config;
 

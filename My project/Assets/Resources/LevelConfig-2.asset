@@ -15,5 +15,5 @@ MonoBehaviour:
   codeBlocks:
   - code: a, b, c = 1, -2, 1
     block: block-1
-  - code: print('\n'.join([f"{a*x**2 + b*x + c}" for x in range(-9, 10)]))
+  - code: print('\n'.join([f"{a*x**2 + b*x + c}" for x in range(-9, 12)]))
     block: block-2
