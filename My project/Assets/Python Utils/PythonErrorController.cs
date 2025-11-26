@@ -1,27 +1,37 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 public class PythonErrorControler : MonoBehaviour
 {
     [SerializeField] private GameObject errorCanvas;
+    [SerializeField] private Button clearButton;
     [SerializeField] private TextMeshProUGUI errorText;
     
     private void Awake()
     {
-        errorCanvas.SetActive(false);
-        PythonExecutor.OnPythonExecutionCompletedWithFailure.AddListener(HandlePythonExecutionCompletedWithFailure);
+        SetInterfaceElementsActive(false);
+        ImageTracker.OnPythonCodeAssemblyCompletedWithFailure.AddListener(HandlePythonFailure);
+        PythonExecutor.OnPythonExecutionCompletedWithFailure.AddListener(HandlePythonFailure);
+        clearButton.onClick.AddListener(HandleClearPythonError);
         PythonExecutor.OnClearPythonExecution.AddListener(HandleClearPythonError);
     }
 
-    private void HandlePythonExecutionCompletedWithFailure(string output)
+    private void SetInterfaceElementsActive(bool active)
     {
-        errorCanvas.SetActive(true);
+        errorCanvas.SetActive(active);
+        clearButton.gameObject.SetActive(active);
+    }
+
+    private void HandlePythonFailure(string output)
+    {
+        SetInterfaceElementsActive(true);
         errorText.text = output;
     }
 
     private void HandleClearPythonError()
     {
-        errorCanvas.SetActive(false);
+        SetInterfaceElementsActive(false);
     }
 }

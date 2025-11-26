@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
@@ -16,6 +17,7 @@ public class ImageTracker : MonoBehaviour
     public GameObject codePrefab;
     public LevelConfig levelConfig;
     public Button simulateButton;
+    public static readonly UnityEvent<string> OnPythonCodeAssemblyCompletedWithFailure = new();
 
     private ARTrackedImageManager trackedImageManager;
     private Camera xrOriginCamera;
@@ -75,7 +77,7 @@ public class ImageTracker : MonoBehaviour
     public async UniTask OnSimulateClicked()
     {
         Debug.Log("Simulate clicked!");
-    
+
         // First, capture camera frame and calculate block position from camera
         // in order to ensure maximum accuracy of position values.
         var cameraFrame = await borderDetector.GetCameraFrame(xrOriginCamera);
@@ -103,7 +105,8 @@ public class ImageTracker : MonoBehaviour
         }
         if (maxLineBreakTol == 0.0)
         {
-            // TODO: Warn player of border detection failure and provide instructions for better detection.
+            // TODO: Add instructions for better detection in error message.
+            OnPythonCodeAssemblyCompletedWithFailure.Invoke($"<color=red>Execution failed</color>:\nUnable to detect block borders.");
             throw new Exception("Cannot build Python code from arrangement of blocks because no block borders were detected.");
         }
         foreach (var code in simulationCodeBlocks)

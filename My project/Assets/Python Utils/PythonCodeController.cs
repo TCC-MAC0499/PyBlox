@@ -10,20 +10,26 @@ public class PythonCodeController : MonoBehaviour
     
     private void Awake()
     {
-        pythonCodeCanvas.SetActive(false);
+        SetInterfaceElementsActive(false);
         PythonExecutor.OnPythonExecutionInitiated.AddListener(HandlePythonExecutionInitiated);
         clearButton.onClick.AddListener(PythonExecutor.OnClearPythonExecution.Invoke);
         PythonExecutor.OnClearPythonExecution.AddListener(HandleClearPythonCode);
     }
 
+    private void SetInterfaceElementsActive(bool active)
+    {
+        pythonCodeCanvas.SetActive(active);
+        clearButton.gameObject.SetActive(active);
+    }
+
     private void HandlePythonExecutionInitiated(string output)
     {
-        pythonCodeCanvas.SetActive(true);
+        SetInterfaceElementsActive(true);
         pythonCodeText.text = output;
     }
 
     private void HandleClearPythonCode()
     {
-        pythonCodeCanvas.SetActive(false);
+        SetInterfaceElementsActive(false);
     }
 }
