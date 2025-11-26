@@ -26,6 +26,8 @@ public class PythonCodeBlock : IComparable<PythonCodeBlock>
         var deltaY = other.blockScreenPos.y - blockScreenPos.y;
         if (Math.Abs(deltaY) > codeLineBreakTolerance)
         {
+            isWholeLineOfCode = true;
+            other.isWholeLineOfCode = true;
             return (int)deltaY;
         }
 
