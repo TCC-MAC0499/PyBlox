@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -8,6 +9,13 @@ using UnityEngine.Rendering;
 public class BorderDetector
 {
     private readonly GoogleCloudConfig _config;
+
+    public class BlockDelimiter
+    {
+        public List<Vector2> border;
+        public Vector2 topLeftCorner;
+        public Vector2 bottomRightCorner;
+    }
 
     [Serializable]
     public class BlockBorder
@@ -79,34 +87,58 @@ public class BorderDetector
         }
     }
 
+    private List<BlockDelimiter> ExtractDelimitersFromBorders(List<BlockBorder> blockBorders)
+    {
+        var blockDelimiters = new List<BlockDelimiter>();
+        foreach (var block in blockBorders)
+        {
+            Debug.Log("Start of border delimeters");
+            var convertedBorder = new List<Vector2>();
+            foreach (var corner in block.border)
+            {
+                var convertedCorner = corner.ToUnityCoordinateSystem();
+                convertedBorder.Add(convertedCorner);
+                Debug.Log($"Converted corner: {convertedCorner.x}, {convertedCorner.y})");
+            }
+            var borderByAscendingY = convertedBorder.OrderBy(corner => corner.y).ToList();
+
+            var topLeftCorner = borderByAscendingY[3].x < borderByAscendingY[2].x ? borderByAscendingY[3] : borderByAscendingY[2];
+            var bottomRightCorner = borderByAscendingY[0].x > borderByAscendingY[1].x ? borderByAscendingY[0] : borderByAscendingY[1];
+            Debug.Log($"Top left corner: {topLeftCorner.x}, {topLeftCorner.y})");
+            Debug.Log($"Bottom right corner: {bottomRightCorner.x}, {bottomRightCorner.y})");
+
+            blockDelimiters.Add(new BlockDelimiter
+            {
+                border = convertedBorder,
+                topLeftCorner = topLeftCorner,
+                bottomRightCorner = bottomRightCorner
+            });
+        }
+        return blockDelimiters;
+    }
+
     private Dictionary<PythonCodeBlock, List<Vector2>> MatchBlocksToBorders(List<BlockBorder> blockBorders, List<PythonCodeBlock> codeBlocks)
     {
         var codeToBorder = new Dictionary<PythonCodeBlock, List<Vector2>>();
+        var blockDelimiters = ExtractDelimitersFromBorders(blockBorders);
         foreach (var codeBlock in codeBlocks)
         {
             var blockCenter = codeBlock.GetPositionFromCamera();
-            BlockBorder matchingBorder = null;
-            for (var idx = 0; idx < blockBorders.Count; idx++)
+            BlockDelimiter matchingDelimiter = null;
+            foreach (var blockDelimiter in blockDelimiters)
             {
-                var topLeftCorner = blockBorders[idx].border[0].ToUnityCoordinateSystem();
-                var bottomRightCorner = blockBorders[idx].border[2].ToUnityCoordinateSystem();
-
-                var topLeftFitsBlock = topLeftCorner.x <= blockCenter.x && topLeftCorner.y >= blockCenter.y;
-                var bottomRightFitsBlock = bottomRightCorner.x >= blockCenter.x && bottomRightCorner.y <= blockCenter.y;
+                var topLeftFitsBlock = blockDelimiter.topLeftCorner.x <= blockCenter.x && blockDelimiter.topLeftCorner.y >= blockCenter.y;
+                var bottomRightFitsBlock = blockDelimiter.bottomRightCorner.x >= blockCenter.x && blockDelimiter.bottomRightCorner.y <= blockCenter.y;
                 if (topLeftFitsBlock && bottomRightFitsBlock)
                 {
-                    var convertedBorder = new List<Vector2>();
-                    foreach (var corner in blockBorders[idx].border)
-                    {
-                        convertedBorder.Add(corner.ToUnityCoordinateSystem());
-                    }
-
-                    codeToBorder[codeBlock] = convertedBorder;
-                    matchingBorder = blockBorders[idx];
+                    Debug.Log($"Matched top left corner: {blockDelimiter.topLeftCorner.x}, {blockDelimiter.topLeftCorner.y})");
+                    Debug.Log($"Matched bottom right corner: {blockDelimiter.bottomRightCorner.x}, {blockDelimiter.bottomRightCorner.y})");
+                    codeToBorder[codeBlock] = blockDelimiter.border;
+                    matchingDelimiter = blockDelimiter;
                     break;
                 }
             }
-            blockBorders.Remove(matchingBorder);
+            blockDelimiters.Remove(matchingDelimiter);
         }
         return codeToBorder;
     }
